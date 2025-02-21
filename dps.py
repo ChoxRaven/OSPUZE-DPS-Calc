@@ -220,10 +220,10 @@ if not("No Crit" in calcExceptions):
     critDps = (critDamage * firerate)
 if not("No Falloff" in calcExceptions):
     rangedDamagePotential = (rangedDamage * magazine)
-    minDps = dps * rangeDamageModifer
+    rangedDps = dps * rangeDamageModifer
 if not("No Crit" in calcExceptions) and not("No Falloff" in calcExceptions):
     rangedCritDamagePotential = (rangedCritDamage * magazine)
-    minCritDps = critDps * rangeDamageModifer
+    rangedCritDps = critDps * rangeDamageModifer
 
 #TODO
 if not("Burst" in calcExceptions):
@@ -231,9 +231,9 @@ if not("Burst" in calcExceptions):
     if not("No Crit" in calcExceptions):
         print("DPS w/ Crit:", round(critDps, 3))
     if not("No Falloff" in calcExceptions):
-        print("DPS @Range:", round(minDps, 3))
+        print("DPS @Range:", round(rangedDps, 3))
     if not("No Crit" in calcExceptions) and not("No Falloff" in calcExceptions):
-        print("DPS w/ Crit @Range", round(minCritDps, 3))
+        print("DPS w/ Crit @Range", round(rangedCritDps, 3))
 else:
     print("DPS information is not available for Burst weapons in the current version ({})".format(version))
 print("")
@@ -319,10 +319,13 @@ if not("No Crit" in calcExceptions) and not("No Falloff" in calcExceptions):
 
 if not("No Falloff" in calcExceptions):
     print("\nDamage numbers at all falloff values:")
-    ypoints = np.array([])
-    for i in range(101):
-        ypoints = np.append(ypoints, measureDamage(damage, rangeDamageModifer, falloffStart, falloffEnd, i))
-    plt.plot(ypoints)
+    xpoints = [damage, damage, rangedDamage, rangedDamage]
+    xpoints = np.array(xpoints)
+
+    ypoints = [0, falloffStart, falloffEnd, 100]
+    ypoints = np.array(ypoints)
+
+    plt.plot(ypoints, xpoints, marker = 'o')
 
     plt.title(selectedWeapon)
     plt.xlabel("Distance")
