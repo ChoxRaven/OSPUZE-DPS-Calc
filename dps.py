@@ -7,7 +7,7 @@ print("generated using OSPUZE™ Finals Stats Calculator", version)
 
 userInput = input("Load stats of an existing / example weapon? (y/n): ")
 if(userInput == "y"):
-    print("List of live weapons:\n Light: V9s, M11, XP-54, LH1, SR-84 \n Medium: Turret, R.357, AKM, FCAR, FAMAS, Pike-556 \n Heavy: .50 Akimbo, M60, Lewis-Gun, KS-23")
+    print("List of live weapons:\n Light: V9S, M11, XP-54, LH1, SR-84 \n Medium: Turret, R.357, AKM, FCAR, FAMAS, Pike-556 \n Heavy: .50 Akimbo, M60, Lewis Gun, KS-23")
     print("List of hypothetical weapons:\n Light: N/A \n Medium: N/A \n Heavy: N/A")
     selectedWeapon = input("Weapon: ")
     match selectedWeapon:
@@ -59,7 +59,7 @@ if(userInput == "y"):
             falloffEnd = 100
         #Medium:
         case "Turret":
-            calcExceptions = ["Limited Range", "Inf Ammo", "No Crit"]
+            calcExceptions = ["Limited Range", "Inf Ammo", "No Crit", "No Falloff"]
             damage = 5.0
             firerate = 480 / 60
             maxRange = 20
@@ -162,7 +162,7 @@ if(userInput == "y"):
         print("Falloff end distance:", falloffEnd)
         print("Damage @Range:", round(rangedDamage, 3))
     else:
-        print("Range: {}m".format(falloffStart))
+        print("Range: {}m".format(maxRange))
     if not("No Crit" in calcExceptions) and not("No Falloff" in calcExceptions):
         print("Damage @Range w/ Crit:", round(rangedCritDamage, 3))
 
@@ -235,6 +235,7 @@ if not("Burst" in calcExceptions):
     if not("No Crit" in calcExceptions) and not("No Falloff" in calcExceptions):
         print("DPS w/ Crit @Range", round(rangedCritDps, 3))
 else:
+    #TODO
     print("DPS information is not available for Burst weapons in the current version ({})".format(version))
 print("")
 
