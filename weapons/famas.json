@@ -1,0 +1,54 @@
+{
+    "famas": {
+        "heavy": {
+            "0": {
+                "0": {
+                    "current_magazine": 11,
+                    "shots": 16,
+                    "reloads": 0,
+                    "ttk": 1.9166666666666665,
+                    "final_dmg": 368.0
+                },
+                "1": {
+                    "current_magazine": 16,
+                    "shots": 11,
+                    "reloads": 0,
+                    "ttk": 1.2249999999999999,
+                    "final_dmg": 379.5
+                }
+            },
+            "1": {
+                "0": {
+                    "current_magazine": 6,
+                    "shots": 21,
+                    "reloads": 0,
+                    "ttk": 2.45,
+                    "final_dmg": 362.25
+                },
+                "1": {
+                    "current_magazine": 13,
+                    "shots": 14,
+                    "reloads": 0,
+                    "ttk": 1.6083333333333332,
+                    "final_dmg": 362.25
+                }
+            },
+            "2": {
+                "0": {
+                    "current_magazine": 23,
+                    "shots": 31,
+                    "reloads": 1,
+                    "ttk": 6.4333333333333345,
+                    "final_dmg": 356.5
+                },
+                "1": {
+                    "current_magazine": 6,
+                    "shots": 21,
+                    "reloads": 0,
+                    "ttk": 2.45,
+                    "final_dmg": 362.25
+                }
+            }
+        }
+    }
+}
