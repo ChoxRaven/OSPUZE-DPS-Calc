@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OSPUZE DPS Calc</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      canvas {
+        max-width: 100%;
+      }
+
+      fieldset {
+        margin: 0 0 1rem 0;
+        padding: 0.5rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 0.5rem;
+      }
+
+      fieldset label:has(+ input:disabled),
+      fieldset input:disabled {
+        opacity: 0.5;
+        cursor:not-allowed;
+      }
+
+      .container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+      }
+
+      .presets-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        padding: 1rem;
+        justify-content: center;
+        box-sizing: border-box;
+        max-width: 100%;
+      }
+
+      .preset-group {
+        flex: 1 1 calc(33.33% - 2rem); /* Fit 3 columns with gap compensation */
+        max-width: calc(33.33% - 2rem);
+        min-width: 180px;
+        box-sizing: border-box;
+      }
+
+      .preset-group button {
+        display: inline;
+        width: calc(33.33% - 0.25rem);
+        margin: 0.25rem 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="presets-container">
+      <fieldset class="preset-group">
+        <legend>Light</legend>
+        <button type="button" onclick="loadPreset('V9S')">V9S</button>
+        <button type="button" onclick="loadPreset('M11')">M11</button>
+        <button type="button" onclick="loadPreset('XP54')">XP-54</button>
+        <button type="button" onclick="loadPreset('LH1')">LH1</button>
+        <button type="button" onclick="loadPreset('SR84')">SR-84</button>
+      </fieldset>
+      <fieldset class="preset-group">
+        <legend>Medium</legend>
+        <button type="button" onclick="loadPreset('R357')">R.357</button>
+        <button type="button" onclick="loadPreset('AKM')">AKM</button>
+        <button type="button" onclick="loadPreset('FCAR')">FCAR</button>
+        <button type="button" onclick="loadPreset('FAMAS')">FAMAS</button>
+        <button type="button" onclick="loadPreset('Pike556')">Pike-556</button>
+        <button type="button" onclick="loadPreset('CB01Repeater')">CB-01 Repeater</button>
+      </fieldset>
+      <fieldset class="preset-group">
+        <legend>Heavy</legend>
+        <button type="button" onclick="loadPreset('Akimbo50')">.50 Akimbo</button>
+        <button type="button" onclick="loadPreset('M60')">M60</button>
+        <button type="button" onclick="loadPreset('LewisGun')">Lewis Gun</button>
+        <button type="button" onclick="loadPreset('KS23')">KS-23</button>
+      </fieldset>
+    </div>
+
+    <div class="container">
+      <form style="flex: 1; min-width: 300px; max-width: 400px;">
+        <fieldset>
+          <legend>Graph:</legend>
+          <label for="graphMode">Mode: </label>
+          <select id="graphMode">
+            <option value="damage">Damage</option>
+            <option value="ttk">TTK</option>
+          </select><br>
+          <label><input type="checkbox" class="enemyToggle" value="150" checked>Light: </label><br>
+          <label><input type="checkbox" class="enemyToggle" value="250" checked>Medium: </label><br>
+          <label><input type="checkbox" class="enemyToggle" value="350" checked>Heavy: </label>
+        </fieldset>
+        <fieldset>
+          <legend>Offensive:</legend>
+          <label for="damage">Damage: </label><br><input type="number" id="damage" value="74"><br>
+          <label for="critMult">Crit Multi: </label><br><input type="number" id="critMult" value="2"><br>
+        </fieldset>
+        <fieldset>
+          <legend>Handling:</legend>
+          Firemode:<br>
+          <input type="radio" id="standardFiremode" name="firemodes" value="Standard" checked>
+          <label for="standardFiremode">Auto / Semi</label><br>
+          <input type="radio" id="burstFiremode" name="firemodes" value="Burst">
+          <label for="burstFiremode">Burst</label><br>
+          <input type="radio" id="chargedFiremode" name="firemodes" value="Charged">
+          <label for="chargedFiremode">Charged</label><br>
+          <label for="magazine">Mag Size: </label><br><input type="number" id="magazine" value="6"><br>
+          <label for="fireRate">RPM: </label><br><input type="number" id="fireRate" value="140"><br>
+          <label for="burstRate">Burst Rate: </label><br><input type="number" id="burstRate" value="0"><br>
+          <label for="burstCount">Burst Count: </label><br><input type="number" id="burstCount" value="0"><br>
+        </fieldset>
+        <fieldset id="rangeFieldset">
+          <legend>Range:</legend>
+          <label for="falloff">Falloff: </label><input type="checkbox" id="falloff" checked><br>
+          <label for="falloffMult">Falloff Multi: </label><br><input type="number" id="falloffMult" value="0.45"><br>
+          <label for="falloffStart">Falloff Start: </label><br><input type="number" id="falloffStart" value="23"><br>
+          <label for="falloffEnd">Falloff End: </label><br><input type="number" id="falloffEnd" value="40"><br>
+        </fieldset>
+      </form>
+
+      <div style="flex: 2; min-width: 300px;">
+        <canvas id="falloffChart"></canvas>
+      </div>
+    </div>
+
+    <script>
+      let chart;
+
+      function getDamageAtDistance(baseDamage, falloffMult, falloffStart, falloffEnd, distance, critMult = 1) {
+        const damage = baseDamage * critMult;
+        if (distance <= falloffStart) return damage;
+        if (distance >= falloffEnd) return damage * falloffMult;
+        const pct = (distance - falloffStart) / (falloffEnd - falloffStart);
+        return damage * (1 - pct * (1 - falloffMult));
+      }
+
+      function getInputs() {
+        return {
+          damage: parseFloat(document.getElementById('damage').value),
+          critMult: parseFloat(document.getElementById('critMult').value),
+          falloffMult: parseFloat(document.getElementById('falloffMult').value),
+          falloffStart: parseFloat(document.getElementById('falloffStart').value),
+          falloffEnd: parseFloat(document.getElementById('falloffEnd').value),
+          falloffEnabled: document.getElementById('falloff').checked
+        };
+      }
+      
+      function setFalloffInputsEnabled(enabled) {
+        document.querySelectorAll('#rangeFieldset input:not(#falloff)').forEach(input => {
+          input.disabled = !enabled;
+        });
+      }
+
+      function loadPreset(name) {
+        const preset = presets[name];
+        if (!preset) return;
+        document.getElementById('standardFiremode').checked = preset.firemode === 'Standard';
+        document.getElementById('burstFiremode').checked = preset.firemode === 'Burst';
+        document.getElementById('chargedFiremode').checked = preset.firemode === 'Charged';
+
+
+        document.getElementById('damage').value = preset.damage;
+        document.getElementById('critMult').value = preset.critMult;
+        document.getElementById('magazine').value = preset.magazine;
+        document.getElementById('fireRate').value = preset.fireRate;
+        document.getElementById('burstRate').value = preset.burstRate;
+        document.getElementById('burstCount').value = preset.burstCount;
+
+        document.getElementById('falloff').checked = preset.falloff;
+        document.getElementById('falloffMult').value = preset.falloffMult;
+        document.getElementById('falloffStart').value = preset.falloffStart;
+        document.getElementById('falloffEnd').value = preset.falloffEnd;
+        
+        setFalloffInputsEnabled(preset.falloff);
+        updateChart();
+      }
+
+      function setFalloffInputsEnabled(enabled) {
+        document.querySelectorAll('#rangeFieldset input:not(#falloff)').forEach(input => {
+          input.disabled = !enabled;
+        });
+      }
+      
+      const presets = {
+        //Light
+        V9S: {
+          damage: 40,
+          critMult: 1.5,
+          magazine: 20,
+          fireRate: 360,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.62,
+          falloffStart: 10,
+          falloffEnd: 15
+        },
+        Berreta93R: {
+          damage: 26,
+          critMult: 1.5,
+          magazine: 21,
+          fireRate: 950,
+          burstRate: 220,
+          burstCount: 3,
+          firemode: 'Burst',
+          falloff: true,
+          falloffMult: 0.55,
+          falloffStart: 28,
+          falloffEnd: 35
+        },
+        M11: {
+          damage: 16,
+          critMult: 1.5,
+          magazine: 40,
+          fireRate: 1000,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.52,
+          falloffStart: 10,
+          falloffEnd: 17.5
+        },
+        XP54: {
+          damage: 17,
+          critMult: 1.5,
+          magazine: 32,
+          fireRate: 850,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.52,
+          falloffStart: 22.5,
+          falloffEnd: 32.5
+        },
+        LH1: {
+          damage: 40,
+          critMult: 2,
+          magazine: 15,
+          fireRate: 270,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.75,
+          falloffStart: 50,
+          falloffEnd: 55
+        },
+        SR84: {
+          damage: 118,
+          critMult: 2,
+          magazine: 6,
+          fireRate: 46,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.75,
+          falloffStart: 80,
+          falloffEnd: 100
+        },
+        //Medium
+        R357: {
+          damage: 74,
+          critMult: 2,
+          magazine: 6,
+          fireRate: 140,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.45,
+          falloffStart: 23,
+          falloffEnd: 40
+        },
+        AKM: {
+          damage: 20,
+          critMult: 1.5,
+          magazine: 32,
+          fireRate: 600,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.55,
+          falloffStart: 30,
+          falloffEnd: 37.5
+        },
+        FCAR: {
+          damage: 22,
+          critMult: 1.5,
+          magazine: 25,
+          fireRate: 540,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.55,
+          falloffStart: 35,
+          falloffEnd: 40
+        },
+        FAMAS: {
+          damage: 23,
+          critMult: 1.5,
+          magazine: 27,
+          fireRate: 1050,
+          burstRate: 220,
+          burstCount: 3,
+          firemode: 'Burst',
+          falloff: true,
+          falloffMult: 0.5,
+          falloffStart: 37.5,
+          falloffEnd: 47.5
+        },
+        Pike556: {
+          damage: 50,
+          critMult: 1.5,
+          magazine: 12,
+          fireRate: 200,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.75,
+          falloffStart: 45,
+          falloffEnd: 50
+        },
+        CB01Repeater: {
+          damage: 84,
+          critMult: 1.5,
+          magazine: 8,
+          fireRate: 73,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.7,
+          falloffStart: 40,
+          falloffEnd: 45
+        },
+        //Heavy
+        Akimbo50: {
+          damage: 44,
+          critMult: 2,
+          magazine: 14,
+          fireRate: 230,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.5,
+          falloffStart: 37.5,
+          falloffEnd: 47.5
+        },
+        M60: {
+          damage: 20,
+          critMult: 1.5,
+          magazine: 70,
+          fireRate: 580,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.5,
+          falloffStart: 25,
+          falloffEnd: 35
+        },
+        LewisGun: {
+          damage: 22,
+          critMult: 1.5,
+          magazine: 47,
+          fireRate: 500,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.67,
+          falloffStart: 35,
+          falloffEnd: 40
+        },
+        KS23: {
+          damage: 100,
+          critMult: 1,
+          magazine: 6,
+          fireRate: 75,
+          burstRate: 0,
+          burstCount: 0,
+          firemode: 'Standard',
+          falloff: true,
+          falloffMult: 0.7,
+          falloffStart: 18,
+          falloffEnd: 23
+        },
+      };
+
+      function updateChart() {
+        const {
+          damage, critMult, falloffMult,
+          falloffStart, falloffEnd, falloffEnabled
+        } = getInputs();
+
+        const firemode = document.querySelector('input[name="firemodes"]:checked').value;
+        const fireRate = parseFloat(document.getElementById('fireRate').value);
+        const burstRate = parseFloat(document.getElementById('burstRate').value);
+        const burstCount = parseInt(document.getElementById('burstCount').value);
+        const graphMode = document.getElementById('graphMode').value;
+
+        setFalloffInputsEnabled(falloffEnabled);
+
+        const xStart = 0;
+        const xEnd = falloffEnabled ? Math.max(falloffEnd + 10, falloffStart + 20) : 50;
+        const step = 0.1;
+
+        const selectedEnemies = Array.from(document.querySelectorAll('.enemyToggle'))
+          .filter(cb => cb.checked)
+          .map(cb => parseInt(cb.value));
+
+        const datasets = [];
+
+        function getTTK(hp, dmg, dist) {
+          const damageAtDist = falloffEnabled
+            ? getDamageAtDistance(dmg, falloffMult, falloffStart, falloffEnd, dist)
+            : dmg;
+
+          const shotsToKill = Math.ceil(hp / damageAtDist);
+          if (firemode === 'Charged') {
+            const delay = 60 / fireRate;
+            return +(shotsToKill * delay).toFixed(3);
+          } else if (firemode === 'Burst') {
+            const burstsNeeded = Math.ceil(shotsToKill / burstCount);
+            const timeWithinBurst = (burstCount - 1) * (60 / fireRate);
+            const timeBetweenBursts = (burstsNeeded - 1) * (60 / burstRate);
+            const totalTTK = timeWithinBurst + timeBetweenBursts;
+            return +totalTTK.toFixed(3);
+          } else {
+            const delay = 60 / fireRate;
+            return +((shotsToKill - 1) * delay).toFixed(3);
+          }
+        }
+
+        if (graphMode === 'ttk') {
+          selectedEnemies.forEach(hp => {
+            const basePoints = [];
+            const critPoints = [];
+
+            for (let x = xStart; x <= xEnd; x += step) {
+              const dist = parseFloat(x.toFixed(2));
+              const baseTTK = getTTK(hp, damage, dist);
+              const critTTK = getTTK(hp, damage * critMult, dist);
+              basePoints.push({ x: dist, y: baseTTK });
+              critPoints.push({ x: dist, y: critTTK });
+            }
+
+            datasets.push({
+              label: `Base TTK - ${hp} HP`,
+              data: basePoints,
+              borderColor: hp === 150 ? '#50c878' : hp === 250 ? '#f4c542' : '#c75050',
+              tension: 0.15,
+              pointRadius: 0
+            });
+
+            datasets.push({
+              label: `Crit TTK - ${hp} HP`,
+              data: critPoints,
+              borderColor: hp === 150 ? '#4ae99b' : hp === 250 ? '#f7e571' : '#f28b8b',
+              borderDash: [5, 5],
+              tension: 0.15,
+              pointRadius: 0
+            });
+          });
+        } else {
+          const basePoints = [];
+          const critPoints = [];
+
+          for (let x = xStart; x <= xEnd; x += step) {
+            const dist = parseFloat(x.toFixed(2));
+            const baseY = falloffEnabled
+              ? getDamageAtDistance(damage, falloffMult, falloffStart, falloffEnd, dist)
+              : damage;
+            const critY = falloffEnabled
+              ? getDamageAtDistance(damage, falloffMult, falloffStart, falloffEnd, dist, critMult)
+              : damage * critMult;
+            basePoints.push({ x: dist, y: parseFloat(baseY.toFixed(2)) });
+            critPoints.push({ x: dist, y: parseFloat(critY.toFixed(2)) });
+          }
+
+          datasets.push({
+            label: 'Base Damage',
+            data: basePoints,
+            borderColor: 'rgb(75, 195, 195)',
+            tension: 0.15,
+            pointRadius: 0
+          });
+
+          datasets.push({
+            label: 'Critical Damage',
+            data: critPoints,
+            borderColor: 'rgb(255, 100, 135)',
+            borderDash: [5, 5],
+            tension: 0.15,
+            pointRadius: 0
+          });
+        }
+
+        const allY = datasets.flatMap(ds => ds.data.map(p => p.y));
+        const yMax = Math.ceil(Math.max(...allY) * 1.05);
+        const yMin = Math.floor(Math.min(...allY) * 0.95);
+
+        if (chart) {
+          chart.data.datasets = datasets;
+          chart.options.scales.x.max = xEnd;
+          chart.options.scales.y.min = yMin;
+          chart.options.scales.y.max = yMax;
+          chart.options.scales.y.title.text = graphMode === 'ttk' ? 'Time to Kill (s)' : 'Damage';
+          chart.update();
+          return;
+        }
+
+        const ctx = document.getElementById('falloffChart').getContext('2d');
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            datasets: datasets
+          },
+          options: {
+            responsive: true,
+            interaction: {
+              mode: 'nearest',
+              axis: 'x',
+              intersect: false
+            },
+            plugins: {
+              tooltip: {
+                enabled: true,
+                callbacks: {
+                  title: function(ctx) {
+                    return `Distance: ${ctx[0].parsed.x.toFixed(2)}m`;
+                  },
+                  label: function(ctx) {
+                    const dist = ctx.parsed.x;
+                    const val = ctx.parsed.y;
+                    const { falloffStart, falloffEnd } = getInputs();
+                    let falloffStage = '';
+                    if (dist <= falloffStart) {
+                      falloffStage = 'Pre-Falloff';
+                    } else if (dist < falloffEnd) {
+                      falloffStage = 'In-Falloff';
+                    } else {
+                      falloffStage = 'Post-Falloff';
+                    }
+
+                    const modeLabel = graphMode === 'ttk' ? 'TTK' : 'Damage';
+                    return `${ctx.dataset.label}: ${val} (${modeLabel}, ${falloffStage})`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                type: 'linear',
+                min: 0,
+                max: xEnd,
+                title: {
+                  display: true,
+                  text: 'Distance (m)'
+                }
+              },
+              y: {
+                beginAtZero: false,
+                min: yMin,
+                max: yMax,
+                title: {
+                  display: true,
+                  text: graphMode === 'ttk' ? 'Time to Kill (s)' : 'Damage'
+                }
+              }
+            }
+          },
+          plugins: [{
+            id: 'crosshair',
+            afterDraw: chart => {
+              const tooltip = chart.tooltip;
+              if (tooltip?._active?.length) {
+                const ctx = chart.ctx;
+                const x = tooltip._active[0].element.x;
+                const topY = chart.scales.y.top;
+                const bottomY = chart.scales.y.bottom;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x, topY);
+                ctx.lineTo(x, bottomY);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#888';
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.restore();
+              }
+            }
+          }]
+        });
+      }
+
+      document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updateChart);
+        input.addEventListener('change', updateChart);
+        
+      });
+
+      document.querySelector('form').addEventListener('submit', e => e.preventDefault());
+      document.getElementById('graphMode').addEventListener('change', updateChart);
+      window.onload = () => {
+        const falloffEnabled = document.getElementById('falloff').checked;
+        setFalloffInputsEnabled(falloffEnabled);
+        updateChart();
+      };
+    </script>
+  </body>
+</html>
