@@ -143,565 +143,584 @@
     </div>
 
     <script>
-      let chart;
-      let currentPreset = 'R357';
+    let chart;
+    let currentPreset = 'R357';
 
-      function getDamageAtDistance(baseDamage, falloffMult, falloffStart, falloffEnd, distance, critMult = 1) {
-        const damage = baseDamage * critMult;
-        if (distance <= falloffStart) return damage;
-        if (distance >= falloffEnd) return damage * falloffMult;
-        const pct = (distance - falloffStart) / (falloffEnd - falloffStart);
-        return damage * (1 - pct * (1 - falloffMult));
+    function getDamageAtDistance(baseDamage, falloffMult, falloffStart, falloffEnd, distance, critMult = 1) {
+      const damage = baseDamage * critMult;
+      if (distance <= falloffStart) return damage;
+      if (distance >= falloffEnd) return damage * falloffMult;
+      const pct = (distance - falloffStart) / (falloffEnd - falloffStart);
+      return damage * (1 - pct * (1 - falloffMult));
+    }
+
+    function getInputs() {
+      return {
+        damage: parseFloat(document.getElementById('damage').value),
+        critMult: parseFloat(document.getElementById('critMult').value),
+        magazine: parseInt(document.getElementById('magazine').value, 10),
+        fireRate: parseFloat(document.getElementById('fireRate').value),
+        reloadTime: parseFloat(document.getElementById('reloadTime').value),
+        burstRate: parseFloat(document.getElementById('burstRate').value),
+        burstCount: parseInt(document.getElementById('burstCount').value, 10),
+        falloffMult: parseFloat(document.getElementById('falloffMult').value),
+        falloffStart: parseFloat(document.getElementById('falloffStart').value),
+        falloffEnd: parseFloat(document.getElementById('falloffEnd').value),
+        falloffEnabled: document.getElementById('falloff').checked,
+        firemode: document.querySelector('input[name="firemodes"]:checked')?.id || 'standardFiremode'
+      };
+    }
+
+    function setFalloffInputsEnabled(enabled) {
+      document.querySelectorAll('#rangeFieldset input:not(#falloff)').forEach(input => {
+        input.disabled = !enabled;
+      });
+    }
+
+    function updatePresetDisplay() {
+      const display = document.getElementById('presetDisplay');
+      if (currentPreset && isCurrentPreset(currentPreset)) {
+        display.textContent = presets[currentPreset].displayName || currentPreset;
+      } else {
+        display.textContent = 'Custom';
+        currentPreset = null;
       }
+    }
 
-      function getInputs() {
-        return {
-          damage: parseFloat(document.getElementById('damage').value),
-          critMult: parseFloat(document.getElementById('critMult').value),
-          magazine: parseInt(document.getElementById('magazine').value, 10),
-          fireRate: parseFloat(document.getElementById('fireRate').value),
-          reloadTime: parseFloat(document.getElementById('reloadTime').value),
-          burstRate: parseFloat(document.getElementById('burstRate').value),
-          burstCount: parseInt(document.getElementById('burstCount').value, 10),
-          falloffMult: parseFloat(document.getElementById('falloffMult').value),
-          falloffStart: parseFloat(document.getElementById('falloffStart').value),
-          falloffEnd: parseFloat(document.getElementById('falloffEnd').value),
-          falloffEnabled: document.getElementById('falloff').checked,
-          firemode: document.querySelector('input[name="firemodes"]:checked')?.id || 'standardFiremode'
-        };
+    function isCurrentPreset(presetName) {
+      const preset = presets[presetName];
+      if (!preset) return false;
+      
+      const currentValues = getInputs();
+      const currentFiremode = currentValues.firemode === 'standardFiremode' ? 'Standard' :
+                            currentValues.firemode === 'burstFiremode' ? 'Burst' : 'Charged';
+      
+      return (
+        currentValues.damage === preset.damage &&
+        currentValues.critMult === preset.critMult &&
+        currentValues.magazine === preset.magazine &&
+        currentValues.fireRate === preset.fireRate &&
+        currentValues.reloadTime === preset.reloadTime &&
+        currentValues.burstRate === preset.burstRate &&
+        currentValues.burstCount === preset.burstCount &&
+        currentFiremode === preset.firemode &&
+        currentValues.falloffEnabled === preset.falloff &&
+        currentValues.falloffMult === preset.falloffMult &&
+        currentValues.falloffStart === preset.falloffStart &&
+        currentValues.falloffEnd === preset.falloffEnd
+      );
+    }
+
+    function loadPreset(name) {
+      const preset = presets[name];
+      if (!preset) return;
+
+      currentPreset = name;
+      
+      document.getElementById('standardFiremode').checked = preset.firemode === 'Standard';
+      document.getElementById('burstFiremode').checked = preset.firemode === 'Burst';
+      document.getElementById('chargedFiremode').checked = preset.firemode === 'Charged';
+
+      document.getElementById('damage').value = preset.damage;
+      document.getElementById('critMult').value = preset.critMult;
+      document.getElementById('magazine').value = preset.magazine;
+      document.getElementById('fireRate').value = preset.fireRate;
+      document.getElementById('reloadTime').value = preset.reloadTime;
+      document.getElementById('burstRate').value = preset.burstRate;
+      document.getElementById('burstCount').value = preset.burstCount;
+
+      document.getElementById('falloff').checked = preset.falloff;
+      document.getElementById('falloffMult').value = preset.falloffMult;
+      document.getElementById('falloffStart').value = preset.falloffStart;
+      document.getElementById('falloffEnd').value = preset.falloffEnd;
+      
+      setFalloffInputsEnabled(preset.falloff);
+      updatePresetDisplay();
+      updateChart();
+    }
+
+    const presets = {
+      // Light weapons
+      V9S: {
+        displayName: 'V9S',
+        damage: 40, critMult: 1.5, magazine: 20, fireRate: 360, reloadTime: 1.9,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.62, falloffStart: 10, falloffEnd: 15
+      },
+      M11: {
+        displayName: 'M11',
+        damage: 16, critMult: 1.5, magazine: 40, fireRate: 1000, reloadTime: 2.2,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.52, falloffStart: 10, falloffEnd: 17.5
+      },
+      XP54: {
+        displayName: 'XP-54',
+        damage: 17, critMult: 1.5, magazine: 32, fireRate: 850, reloadTime: 2.5,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.52, falloffStart: 22.5, falloffEnd: 32.5
+      },
+      LH1: {
+        displayName: 'LH1',
+        damage: 40, critMult: 2, magazine: 15, fireRate: 270, reloadTime: 1.8,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.75, falloffStart: 50, falloffEnd: 55
+      },
+      SR84: {
+        displayName: 'SR-84',
+        damage: 118, critMult: 2, magazine: 6, fireRate: 46, reloadTime: 3.5,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.75, falloffStart: 80, falloffEnd: 100
+      },
+      // Medium weapons
+      R357: {
+        displayName: 'R.357', // The goat
+        damage: 74, critMult: 2, magazine: 6, fireRate: 140, reloadTime: 2,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.45, falloffStart: 23, falloffEnd: 40
+      },
+      AKM: {
+        displayName: 'AKM',
+        damage: 20, critMult: 1.5, magazine: 32, fireRate: 600, reloadTime: 2.9,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.55, falloffStart: 30, falloffEnd: 37.5
+      },
+      FCAR: {
+        displayName: 'FCAR',
+        damage: 22, critMult: 1.5, magazine: 25, fireRate: 540, reloadTime: 2.3,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.55, falloffStart: 35, falloffEnd: 40
+      },
+      FAMAS: {
+        displayName: 'FAMAS',
+        damage: 23, critMult: 1.5, magazine: 27, fireRate: 1050, reloadTime: 2.5,
+        burstRate: 220, burstCount: 3, firemode: 'Burst',
+        falloff: true, falloffMult: 0.5, falloffStart: 37.5, falloffEnd: 47.5
+      },
+      Pike556: {
+        displayName: 'Pike-556',
+        damage: 50, critMult: 1.5, magazine: 12, fireRate: 200, reloadTime: 3.1,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.75, falloffStart: 45, falloffEnd: 50
+      },
+      CB01Repeater: {
+        displayName: 'CB-01 Repeater',
+        damage: 84, critMult: 1.5, magazine: 8, fireRate: 73, reloadTime: 3.6,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.7, falloffStart: 40, falloffEnd: 45
+      },
+      // Heavy weapons
+      Akimbo50: {
+        displayName: '.50 Akimbo',
+        damage: 44, critMult: 2, magazine: 14, fireRate: 230, reloadTime: 1.8,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.5, falloffStart: 37.5, falloffEnd: 47.5
+      },
+      M60: {
+        displayName: 'M60',
+        damage: 20, critMult: 1.5, magazine: 70, fireRate: 580, reloadTime: 4.2,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.5, falloffStart: 25, falloffEnd: 35
+      },
+      LewisGun: {
+        displayName: 'Lewis Gun',
+        damage: 22, critMult: 1.5, magazine: 47, fireRate: 500, reloadTime: 3.8,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.67, falloffStart: 35, falloffEnd: 40
+      },
+      KS23: {
+        displayName: 'KS-23',
+        damage: 100, critMult: 1, magazine: 6, fireRate: 75, reloadTime: 4.5,
+        burstRate: 0, burstCount: 0, firemode: 'Standard',
+        falloff: true, falloffMult: 0.7, falloffStart: 18, falloffEnd: 23
       }
+    };
 
-      function setFalloffInputsEnabled(enabled) {
-        document.querySelectorAll('#rangeFieldset input:not(#falloff)').forEach(input => {
-          input.disabled = !enabled;
+    // Annotation plugin for falloff lines and reload markers
+    const annotationPlugin = {
+      id: 'annotations',
+      afterDraw(chart) {
+        if (document.getElementById('graphMode').value !== 'ttk') return;
+        
+        const { falloffStart, falloffEnd, falloffEnabled } = getInputs();
+        const ctx = chart.ctx;
+        const xScale = chart.scales.x;
+        const yScale = chart.scales.y;
+
+        // Draw falloff start/end lines
+        if (falloffEnabled) {
+          [falloffStart, falloffEnd].forEach(xVal => {
+            const xPix = xScale.getPixelForValue(xVal);
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(xPix, yScale.top);
+            ctx.lineTo(xPix, yScale.bottom);
+            ctx.setLineDash([6, 4]);
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+          });
+        }
+
+        // Draw reload markers with precise calculation
+        const inputs = getInputs();
+        const reloadMarkers = new Map(); // distance -> {hp: reloads}
+        
+        document.querySelectorAll('.enemyToggle:checked').forEach(cb => {
+          const hp = parseInt(cb.value);
+          let lastReloads = 0;
+          let lastDistance = 0;
+          
+          // Use small step to find precise reload points
+          for (let x = xScale.min; x <= xScale.max; x += 0.1) {
+            const distance = parseFloat(x.toFixed(2));
+            const baseDamage = falloffEnabled
+              ? getDamageAtDistance(inputs.damage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, distance)
+              : inputs.damage;
+            
+            const shotsToKill = Math.ceil(hp / baseDamage);
+            const reloads = Math.floor((shotsToKill - 1) / inputs.magazine);
+            
+            // Only mark when reload count changes from the previous distance
+            if (reloads > lastReloads && distance > lastDistance) {
+              // Find the exact transition point by checking previous few points
+              let exactDistance = distance;
+              for (let j = distance - 0.1; j >= Math.max(xScale.min, distance - 1); j -= 0.1) {
+                const testDamage = falloffEnabled
+                  ? getDamageAtDistance(inputs.damage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, j)
+                  : inputs.damage;
+                const testShots = Math.ceil(hp / testDamage);
+                const testReloads = Math.floor((testShots - 1) / inputs.magazine);
+                
+                if (testReloads !== reloads) {
+                  exactDistance = parseFloat((j + 0.1).toFixed(2));
+                  break;
+                }
+              }
+              
+              if (!reloadMarkers.has(exactDistance)) {
+                reloadMarkers.set(exactDistance, new Map());
+              }
+              reloadMarkers.get(exactDistance).set(hp, reloads);
+              lastReloads = reloads;
+              lastDistance = exactDistance;
+            }
+          }
+        });
+
+        // Draw the reload markers
+        reloadMarkers.forEach((hpMap, distance) => {
+          hpMap.forEach((reloads, hp) => {
+            const ttk = getTTK(hp, inputs.damage, distance, inputs);
+            const xPix = xScale.getPixelForValue(distance);
+            const yPix = yScale.getPixelForValue(ttk);
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(xPix, yPix, 3, 0, 2 * Math.PI);
+            ctx.fillStyle = hp === 150 ? '#50c878' : hp === 250 ? '#f4c542' : '#c75050';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+          });
         });
       }
+    };
 
-      function updatePresetDisplay() {
-        const display = document.getElementById('presetDisplay');
-        if (currentPreset && isCurrentPreset(currentPreset)) {
-          display.textContent = presets[currentPreset].displayName || currentPreset;
-        } else {
-          display.textContent = 'Custom';
-          currentPreset = null;
-        }
-      }
+    Chart.register(annotationPlugin);
 
-      function isCurrentPreset(presetName) {
-        const preset = presets[presetName];
-        if (!preset) return false;
+    function getTTK(hp, baseDamage, distance, inputs) {
+      const damageAtDist = inputs.falloffEnabled
+        ? getDamageAtDistance(baseDamage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, distance)
+        : baseDamage;
+      
+      const shotsToKill = Math.ceil(hp / damageAtDist);
+      const reloads = Math.floor((shotsToKill - 1) / inputs.magazine);
+      const shotsAfterReloads = shotsToKill - reloads * inputs.magazine;
+      
+      let ttk = 0;
+      
+      if (inputs.firemode === 'chargedFiremode') {
+        // For charged weapons, each shot takes the full charge time
+        const shotDelay = 60 / inputs.fireRate;
+        ttk = shotsToKill * shotDelay + reloads * inputs.reloadTime;
+      } else if (inputs.firemode === 'burstFiremode') {
+        // Time between bursts (center-to-center)
+        const timeBetweenBursts = 60 / inputs.burstRate;
+        // Time between shots within a burst
+        const timeBetweenShotsInBurst = 60 / inputs.fireRate;
         
-        const currentValues = getInputs();
-        const currentFiremode = currentValues.firemode === 'standardFiremode' ? 'Standard' :
-                              currentValues.firemode === 'burstFiremode' ? 'Burst' : 'Charged';
+        // Calculate how many complete bursts we need
+        const completeBursts = Math.floor(shotsToKill / inputs.burstCount);
+        const remainingShots = shotsToKill % inputs.burstCount;
         
-        return (
-          currentValues.damage === preset.damage &&
-          currentValues.critMult === preset.critMult &&
-          currentValues.magazine === preset.magazine &&
-          currentValues.fireRate === preset.fireRate &&
-          currentValues.reloadTime === preset.reloadTime &&
-          currentValues.burstRate === preset.burstRate &&
-          currentValues.burstCount === preset.burstCount &&
-          currentFiremode === preset.firemode &&
-          currentValues.falloffEnabled === preset.falloff &&
-          currentValues.falloffMult === preset.falloffMult &&
-          currentValues.falloffStart === preset.falloffStart &&
-          currentValues.falloffEnd === preset.falloffEnd
-        );
-      }
-
-      function loadPreset(name) {
-        const preset = presets[name];
-        if (!preset) return;
-
-        currentPreset = name;
+        // Calculate reloads needed during burst firing
+        let totalShots = shotsToKill;
+        let totalReloads = 0;
+        let shotsInCurrentMag = inputs.magazine;
         
-        document.getElementById('standardFiremode').checked = preset.firemode === 'Standard';
-        document.getElementById('burstFiremode').checked = preset.firemode === 'Burst';
-        document.getElementById('chargedFiremode').checked = preset.firemode === 'Charged';
-
-        document.getElementById('damage').value = preset.damage;
-        document.getElementById('critMult').value = preset.critMult;
-        document.getElementById('magazine').value = preset.magazine;
-        document.getElementById('fireRate').value = preset.fireRate;
-        document.getElementById('reloadTime').value = preset.reloadTime;
-        document.getElementById('burstRate').value = preset.burstRate;
-        document.getElementById('burstCount').value = preset.burstCount;
-
-        document.getElementById('falloff').checked = preset.falloff;
-        document.getElementById('falloffMult').value = preset.falloffMult;
-        document.getElementById('falloffStart').value = preset.falloffStart;
-        document.getElementById('falloffEnd').value = preset.falloffEnd;
-        
-        setFalloffInputsEnabled(preset.falloff);
-        updatePresetDisplay();
-        updateChart();
-      }
-
-      const presets = {
-        // Light weapons
-        V9S: {
-          displayName: 'V9S',
-          damage: 40, critMult: 1.5, magazine: 20, fireRate: 360, reloadTime: 1.9,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.62, falloffStart: 10, falloffEnd: 15
-        },
-        M11: {
-          displayName: 'M11',
-          damage: 16, critMult: 1.5, magazine: 40, fireRate: 1000, reloadTime: 2.2,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.52, falloffStart: 10, falloffEnd: 17.5
-        },
-        XP54: {
-          displayName: 'XP-54',
-          damage: 17, critMult: 1.5, magazine: 32, fireRate: 850, reloadTime: 2.5,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.52, falloffStart: 22.5, falloffEnd: 32.5
-        },
-        LH1: {
-          displayName: 'LH1',
-          damage: 40, critMult: 2, magazine: 15, fireRate: 270, reloadTime: 1.8,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.75, falloffStart: 50, falloffEnd: 55
-        },
-        SR84: {
-          displayName: 'SR-84',
-          damage: 118, critMult: 2, magazine: 6, fireRate: 46, reloadTime: 3.5,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.75, falloffStart: 80, falloffEnd: 100
-        },
-        // Medium weapons
-        R357: {
-          displayName: 'R.357',
-          damage: 74, critMult: 2, magazine: 6, fireRate: 140, reloadTime: 2,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.45, falloffStart: 23, falloffEnd: 40
-        },
-        AKM: {
-          displayName: 'AKM',
-          damage: 20, critMult: 1.5, magazine: 32, fireRate: 600, reloadTime: 2.9,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.55, falloffStart: 30, falloffEnd: 37.5
-        },
-        FCAR: {
-          displayName: 'FCAR',
-          damage: 22, critMult: 1.5, magazine: 25, fireRate: 540, reloadTime: 2.3,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.55, falloffStart: 35, falloffEnd: 40
-        },
-        FAMAS: {
-          displayName: 'FAMAS',
-          damage: 23, critMult: 1.5, magazine: 27, fireRate: 1050, reloadTime: 2.5,
-          burstRate: 220, burstCount: 3, firemode: 'Burst',
-          falloff: true, falloffMult: 0.5, falloffStart: 37.5, falloffEnd: 47.5
-        },
-        Pike556: {
-          displayName: 'Pike-556',
-          damage: 50, critMult: 1.5, magazine: 12, fireRate: 200, reloadTime: 3.1,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.75, falloffStart: 45, falloffEnd: 50
-        },
-        CB01Repeater: {
-          displayName: 'CB-01 Repeater',
-          damage: 84, critMult: 1.5, magazine: 8, fireRate: 73, reloadTime: 3.6,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.7, falloffStart: 40, falloffEnd: 45
-        },
-        // Heavy weapons
-        Akimbo50: {
-          displayName: '.50 Akimbo',
-          damage: 44, critMult: 2, magazine: 14, fireRate: 230, reloadTime: 1.8,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.5, falloffStart: 37.5, falloffEnd: 47.5
-        },
-        M60: {
-          displayName: 'M60',
-          damage: 20, critMult: 1.5, magazine: 70, fireRate: 580, reloadTime: 4.2,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.5, falloffStart: 25, falloffEnd: 35
-        },
-        LewisGun: {
-          displayName: 'Lewis Gun',
-          damage: 22, critMult: 1.5, magazine: 47, fireRate: 500, reloadTime: 3.8,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.67, falloffStart: 35, falloffEnd: 40
-        },
-        KS23: {
-          displayName: 'KS-23',
-          damage: 100, critMult: 1, magazine: 6, fireRate: 75, reloadTime: 4.5,
-          burstRate: 0, burstCount: 0, firemode: 'Standard',
-          falloff: true, falloffMult: 0.7, falloffStart: 18, falloffEnd: 23
-        }
-      };
-
-      // Annotation plugin for falloff lines and reload markers
-      const annotationPlugin = {
-        id: 'annotations',
-        afterDraw(chart) {
-          if (document.getElementById('graphMode').value !== 'ttk') return;
-          
-          const { falloffStart, falloffEnd, falloffEnabled } = getInputs();
-          const ctx = chart.ctx;
-          const xScale = chart.scales.x;
-          const yScale = chart.scales.y;
-
-          // Draw falloff start/end lines
-          if (falloffEnabled) {
-            [falloffStart, falloffEnd].forEach(xVal => {
-              const xPix = xScale.getPixelForValue(xVal);
-              ctx.save();
-              ctx.beginPath();
-              ctx.moveTo(xPix, yScale.top);
-              ctx.lineTo(xPix, yScale.bottom);
-              ctx.setLineDash([6, 4]);
-              ctx.strokeStyle = '#888';
-              ctx.lineWidth = 1;
-              ctx.stroke();
-              ctx.restore();
-            });
+        for (let i = 0; i < shotsToKill; i++) {
+          if (shotsInCurrentMag <= 0) {
+            totalReloads++;
+            shotsInCurrentMag = inputs.magazine;
           }
-
-          // Draw reload markers with precise calculation
-          const inputs = getInputs();
-          const reloadMarkers = new Map(); // distance -> {hp: reloads}
-          
-          document.querySelectorAll('.enemyToggle:checked').forEach(cb => {
-            const hp = parseInt(cb.value);
-            let lastReloads = 0;
-            let lastDistance = 0;
-            
-            // Use small step to find precise reload points
-            for (let x = xScale.min; x <= xScale.max; x += 0.1) {
-              const distance = parseFloat(x.toFixed(2));
-              const baseDamage = falloffEnabled
-                ? getDamageAtDistance(inputs.damage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, distance)
-                : inputs.damage;
-              
-              const shotsToKill = Math.ceil(hp / baseDamage);
-              const reloads = Math.floor((shotsToKill - 1) / inputs.magazine);
-              
-              // Only mark when reload count changes from the previous distance
-              if (reloads > lastReloads && distance > lastDistance) {
-                // Find the exact transition point by checking previous few points
-                let exactDistance = distance;
-                for (let j = distance - 0.1; j >= Math.max(xScale.min, distance - 1); j -= 0.1) {
-                  const testDamage = falloffEnabled
-                    ? getDamageAtDistance(inputs.damage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, j)
-                    : inputs.damage;
-                  const testShots = Math.ceil(hp / testDamage);
-                  const testReloads = Math.floor((testShots - 1) / inputs.magazine);
-                  
-                  if (testReloads !== reloads) {
-                    exactDistance = parseFloat((j + 0.1).toFixed(2));
-                    break;
-                  }
-                }
-                
-                if (!reloadMarkers.has(exactDistance)) {
-                  reloadMarkers.set(exactDistance, new Map());
-                }
-                reloadMarkers.get(exactDistance).set(hp, reloads);
-                lastReloads = reloads;
-                lastDistance = exactDistance;
-              }
-            }
-          });
-
-          // Draw the reload markers
-          reloadMarkers.forEach((hpMap, distance) => {
-            hpMap.forEach((reloads, hp) => {
-              const ttk = getTTK(hp, inputs.damage, distance, inputs);
-              const xPix = xScale.getPixelForValue(distance);
-              const yPix = yScale.getPixelForValue(ttk);
-              
-              ctx.save();
-              ctx.beginPath();
-              ctx.arc(xPix, yPix, 3, 0, 2 * Math.PI);
-              ctx.fillStyle = hp === 150 ? '#50c878' : hp === 250 ? '#f4c542' : '#c75050';
-              ctx.fill();
-              ctx.strokeStyle = '#fff';
-              ctx.lineWidth = 1;
-              ctx.stroke();
-              ctx.restore();
-            });
-          });
+          shotsInCurrentMag--;
         }
-      };
-
-      Chart.register(annotationPlugin);
-
-      function getShotsAndReloads(hp, damage, distance, inputs) {
-        const damageAtDist = inputs.falloffEnabled
-          ? getDamageAtDistance(damage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, distance)
-          : damage;
         
-        const shotsToKill = Math.ceil(hp / damageAtDist);
-        const reloads = Math.floor((shotsToKill - 1) / inputs.magazine);
-        return { shots: shotsToKill, reloads };
-      }
-
-      function getTTK(hp, baseDamage, distance, inputs) {
-        const damageAtDist = inputs.falloffEnabled
-          ? getDamageAtDistance(baseDamage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, distance)
-          : baseDamage;
+        // Calculate time for complete bursts
+        // The first shot is immediate, then we have (completeBursts - 1) inter-burst delays
+        let timeForBursts = (completeBursts > 0) ? (completeBursts - 1) * timeBetweenBursts : 0;
         
-        const shotsToKill = Math.ceil(hp / damageAtDist);
-        const reloads = Math.floor((shotsToKill - 1) / inputs.magazine);
-        const shotsAfterReloads = shotsToKill - reloads * inputs.magazine;
+        // Add time for intra-burst shots in complete bursts
+        if (completeBursts > 0) {
+          timeForBursts += completeBursts * (inputs.burstCount - 1) * timeBetweenShotsInBurst;
+        }
         
-        let ttk = 0;
-        
-        if (inputs.firemode === 'chargedFiremode') {
-          // For charged weapons, each shot takes the full charge time
-          const shotDelay = 60 / inputs.fireRate;
-          ttk = shotsToKill * shotDelay + reloads * inputs.reloadTime;
-        } else if (inputs.firemode === 'burstFiremode') {
-          // Time between bursts (center-to-center)
-          const timeBetweenBursts = 60 / inputs.burstRate;
-          // Time between shots within a burst
-          const timeBetweenShotsInBurst = 60 / inputs.fireRate;
-          
-          // Calculate how many complete bursts we need
-          const completeBursts = Math.floor(shotsToKill / inputs.burstCount);
-          const remainingShots = shotsToKill % inputs.burstCount;
-          
-          // Calculate reloads needed during burst firing
-          let totalShots = shotsToKill;
-          let totalReloads = 0;
-          let shotsInCurrentMag = inputs.magazine;
-          
-          for (let i = 0; i < shotsToKill; i++) {
-            if (shotsInCurrentMag <= 0) {
-              totalReloads++;
-              shotsInCurrentMag = inputs.magazine;
-            }
-            shotsInCurrentMag--;
-          }
-          
-          // Calculate time for complete bursts
-          // The first shot is immediate, then we have (completeBursts - 1) inter-burst delays
-          let timeForBursts = (completeBursts > 0) ? (completeBursts - 1) * timeBetweenBursts : 0;
-          
-          // Add time for intra-burst shots in complete bursts
+        // Add time for remaining shots (partial burst)
+        if (remainingShots > 0) {
           if (completeBursts > 0) {
-            timeForBursts += completeBursts * (inputs.burstCount - 1) * timeBetweenShotsInBurst;
+            // If we had complete bursts, we need one more inter-burst delay
+            timeForBursts += timeBetweenBursts;
           }
-          
-          // Add time for remaining shots (partial burst)
-          if (remainingShots > 0) {
-            if (completeBursts > 0) {
-              // If we had complete bursts, we need one more inter-burst delay
-              timeForBursts += timeBetweenBursts;
-            }
-            // Add time for shots in the final partial burst
-            timeForBursts += (remainingShots - 1) * timeBetweenShotsInBurst;
-          }
-          
-          ttk = timeForBursts + totalReloads * inputs.reloadTime;
-        } else {
-          // Standard firing mode - time between shots is consistent
-          const timeBetweenShots = 60 / inputs.fireRate;
-          ttk = (shotsToKill - 1) * timeBetweenShots + reloads * inputs.reloadTime;
+          // Add time for shots in the final partial burst
+          timeForBursts += (remainingShots - 1) * timeBetweenShotsInBurst;
         }
         
-        return Math.max(0, ttk);
+        ttk = timeForBursts + totalReloads * inputs.reloadTime;
+      } else {
+        // Standard firing mode - time between shots is consistent
+        const timeBetweenShots = 60 / inputs.fireRate;
+        ttk = (shotsToKill - 1) * timeBetweenShots + reloads * inputs.reloadTime;
       }
+      
+      return Math.max(0, ttk);
+    }
 
-      function updateChart() {
-        updatePresetDisplay();
-        
-        const inputs = getInputs();
-        const graphMode = document.getElementById('graphMode').value;
-        
-        setFalloffInputsEnabled(inputs.falloffEnabled);
-        
-        const xStart = 0;
-        const xEnd = inputs.falloffEnabled 
-          ? Math.max(inputs.falloffEnd + 10, inputs.falloffStart + 20)
-          : 50;
-        const step = 0.1;
-        
-        const selectedEnemies = Array.from(document.querySelectorAll('.enemyToggle:checked'))
-          .map(cb => parseInt(cb.value));
-        
-        const datasets = [];
-        
-        if (graphMode === 'ttk') {
-          selectedEnemies.forEach(hp => {
-            const basePoints = [];
-            const critPoints = [];
-            
-            for (let x = xStart; x <= xEnd; x += step) {
-              const distance = parseFloat(x.toFixed(2));
-              const baseTTK = getTTK(hp, inputs.damage, distance, inputs);
-              const critTTK = getTTK(hp, inputs.damage * inputs.critMult, distance, inputs);
-              
-              basePoints.push({ x: distance, y: baseTTK });
-              critPoints.push({ x: distance, y: critTTK });
-            }
-            
-            const color = hp === 150 ? '#50c878' : hp === 250 ? '#f4c542' : '#c75050';
-            const critColor = hp === 150 ? '#4ae99b' : hp === 250 ? '#f7e571' : '#f28b8b';
-            
-            datasets.push({
-              label: `Base TTK - ${hp} HP`,
-              data: basePoints,
-              borderColor: color,
-              tension: 0.15,
-              pointRadius: 0,
-              fill: false
-            });
-            
-            datasets.push({
-              label: `Crit TTK - ${hp} HP`,
-              data: critPoints,
-              borderColor: critColor,
-              borderDash: [5, 5],
-              tension: 0.15,
-              pointRadius: 0,
-              fill: false
-            });
-          });
-        } else {
-          // Damage mode - only show one set of curves for all enemies
+    function updateChart() {
+      updatePresetDisplay();
+      
+      const inputs = getInputs();
+      const graphMode = document.getElementById('graphMode').value;
+      
+      setFalloffInputsEnabled(inputs.falloffEnabled);
+      
+      const xStart = 0;
+      const xEnd = inputs.falloffEnabled 
+        ? Math.max(inputs.falloffEnd + 10, inputs.falloffStart + 20)
+        : 50;
+      const step = 0.1;
+      
+      const selectedEnemies = Array.from(document.querySelectorAll('.enemyToggle:checked'))
+        .map(cb => parseInt(cb.value));
+      
+      const datasets = [];
+      
+      if (graphMode === 'ttk') {
+        selectedEnemies.forEach(hp => {
           const basePoints = [];
           const critPoints = [];
           
           for (let x = xStart; x <= xEnd; x += step) {
             const distance = parseFloat(x.toFixed(2));
-            const baseDamage = inputs.falloffEnabled
-              ? getDamageAtDistance(inputs.damage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, distance)
-              : inputs.damage;
-            const critDamage = inputs.falloffEnabled
-              ? getDamageAtDistance(inputs.damage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, distance, inputs.critMult)
-              : inputs.damage * inputs.critMult;
+            const baseTTK = getTTK(hp, inputs.damage, distance, inputs);
+            const critTTK = getTTK(hp, inputs.damage * inputs.critMult, distance, inputs);
             
-            basePoints.push({ x: distance, y: baseDamage });
-            critPoints.push({ x: distance, y: critDamage });
+            basePoints.push({ x: distance, y: baseTTK });
+            critPoints.push({ x: distance, y: critTTK });
           }
           
-          datasets.push({
-            label: 'Base Damage',
+          const color = hp === 150 ? '#50c878' : hp === 250 ? '#f4c542' : '#c75050';
+          const critColor = hp === 150 ? '#4ae99b' : hp === 250 ? '#f7e571' : '#f28b8b';
+          
+          const baseDataset = {
+            label: `Base TTK - ${hp} HP`,
             data: basePoints,
-            borderColor: 'rgb(75, 195, 195)',
+            borderColor: color,
             tension: 0.15,
             pointRadius: 0,
-            fill: false
-          });
+            fill: false,
+            hp: hp,
+            isCrit: false
+          };
           
-          datasets.push({
-            label: 'Critical Damage',
+          const critDataset = {
+            label: `Crit TTK - ${hp} HP`,
             data: critPoints,
-            borderColor: 'rgb(255, 100, 135)',
+            borderColor: critColor,
             borderDash: [5, 5],
             tension: 0.15,
             pointRadius: 0,
-            fill: false
-          });
+            fill: false,
+            hp: hp,
+            isCrit: true
+          };
+          
+          datasets.push(baseDataset);
+          datasets.push(critDataset);
+        });
+      } else {
+        // Damage mode - only show one set of curves for all enemies
+        const basePoints = [];
+        const critPoints = [];
+        
+        for (let x = xStart; x <= xEnd; x += step) {
+          const distance = parseFloat(x.toFixed(2));
+          const baseDamage = inputs.falloffEnabled
+            ? getDamageAtDistance(inputs.damage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, distance)
+            : inputs.damage;
+          const critDamage = inputs.falloffEnabled
+            ? getDamageAtDistance(inputs.damage, inputs.falloffMult, inputs.falloffStart, inputs.falloffEnd, distance, inputs.critMult)
+            : inputs.damage * inputs.critMult;
+          
+          basePoints.push({ x: distance, y: baseDamage });
+          critPoints.push({ x: distance, y: critDamage });
         }
         
-        const allY = datasets.flatMap(ds => ds.data.map(p => p.y));
-        const yMax = allY.length > 0 ? Math.ceil(Math.max(...allY) * 1.05) : 10;
-        const yMin = allY.length > 0 ? Math.floor(Math.min(...allY) * 0.95) : 0;
+        datasets.push({
+          label: 'Base Damage',
+          data: basePoints,
+          borderColor: 'rgb(75, 195, 195)',
+          tension: 0.15,
+          pointRadius: 0,
+          fill: false
+        });
         
-        if (chart) {
-          chart.data.datasets = datasets;
-          chart.options.scales.x.max = xEnd;
-          chart.options.scales.y.min = yMin;
-          chart.options.scales.y.max = yMax;
-          chart.options.scales.y.title.text = graphMode === 'ttk' ? 'Time to Kill (s)' : 'Damage';
-          chart.options.plugins.annotation = graphMode === 'ttk' ? {} : undefined;
-          chart.update();
-          return;
-        }
-        
-        const ctx = document.getElementById('falloffChart').getContext('2d');
-        chart = new Chart(ctx, {
-          type: 'line',
-          data: { datasets },
-          options: {
-            responsive: true,
-            interaction: {
-              mode: 'nearest',
-              axis: 'x',
-              intersect: false
-            },
-            plugins: {
-              tooltip: {
-                enabled: true,
-                callbacks: {
-                  title: function(ctx) {
-                    return `Distance: ${ctx[0].parsed.x.toFixed(2)}m`;
-                  },
-                  label: function(ctx) {
-                    const dist = ctx.parsed.x;
-                    const val = ctx.parsed.y.toFixed(3);
-                    const falloffStage = dist <= inputs.falloffStart ? 'Pre-Falloff' :
-                                       dist < inputs.falloffEnd ? 'In-Falloff' : 'Post-Falloff';
-                    const unit = graphMode === 'ttk' ? 's' : '';
-                    
-                    let result = `${ctx.dataset.label}: ${val}${unit} (${falloffStage})`;
-                    
-                    // Add shots and reloads info for TTK mode
-                    if (graphMode === 'ttk') {
-                      const hpMatch = ctx.dataset.label.match(/(\d+) HP/);
-                      if (hpMatch) {
-                        const hp = parseInt(hpMatch[1]);
-                        const isCrit = ctx.dataset.label.includes('Crit');
-                        const damage = isCrit ? inputs.damage * inputs.critMult : inputs.damage;
-                        const info = getShotsAndReloads(hp, damage, dist, inputs);
-                        result += `\nShots: ${info.shots}, Reloads: ${info.reloads}`;
-                      }
-                    }
-                    
-                    return result;
-                  }
-                }
-              },
-              legend: { display: true }
-            },
-            scales: {
-              x: {
-                type: 'linear',
-                min: 0,
-                max: xEnd,
-                title: {
-                  display: true,
-                  text: 'Distance (m)'
-                }
-              },
-              y: {
-                beginAtZero: false,
-                min: yMin,
-                max: yMax,
-                title: {
-                  display: true,
-                  text: graphMode === 'ttk' ? 'Time to Kill (s)' : 'Damage'
-                }
-              }
-            }
-          },
-          plugins: graphMode === 'ttk' ? [annotationPlugin] : []
+        datasets.push({
+          label: 'Critical Damage',
+          data: critPoints,
+          borderColor: 'rgb(255, 100, 135)',
+          borderDash: [5, 5],
+          tension: 0.15,
+          pointRadius: 0,
+          fill: false
         });
       }
+      
+      const allY = datasets.flatMap(ds => ds.data.map(p => p.y));
+      const yMax = allY.length > 0 ? Math.ceil(Math.max(...allY) * 1.05) : 10;
+      const yMin = allY.length > 0 ? Math.floor(Math.min(...allY) * 0.95) : 0;
+      
+      if (chart) {
+        chart.data.datasets = datasets;
+        chart.options.scales.x.max = xEnd;
+        chart.options.scales.y.min = yMin;
+        chart.options.scales.y.max = yMax;
+        chart.options.scales.y.title.text = graphMode === 'ttk' ? 'Time to Kill (s)' : 'Damage';
+        chart.options.plugins.annotation = graphMode === 'ttk' ? {} : undefined;
+        chart.update();
+        return;
+      }
+      
+      const ctx = document.getElementById('falloffChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          },
+          plugins: {
+            tooltip: {
+              enabled: true,
+              callbacks: {
+                title: function(ctx) {
+                  return `Distance: ${ctx[0].parsed.x.toFixed(2)}m`;
+                },
+                label: function(ctx) {
+                  const tooltipInputs = getInputs(); // Get fresh inputs for tooltip
+                  const dist = ctx.parsed.x;
+                  const val = ctx.parsed.y.toFixed(3);
+                  const dataset = ctx.dataset;
+                  const currentGraphMode = document.getElementById('graphMode').value; // Get graph mode from DOM
 
-      // Event listeners
-      document.querySelectorAll('input, select').forEach(el => {
-        el.addEventListener('input', updateChart);
-        el.addEventListener('change', updateChart);
+                  // Determine falloff category
+                  let distanceCategory;
+                  if (!tooltipInputs.falloffEnabled) {
+                    distanceCategory = 'No Falloff';
+                  } else if (dist <= tooltipInputs.falloffStart) {
+                    distanceCategory = 'Pre-Falloff';
+                  } else if (dist >= tooltipInputs.falloffEnd) {
+                    distanceCategory = 'Post-Falloff';
+                  } else {
+                    distanceCategory = 'In-Falloff';
+                  }
+
+                  const unit = currentGraphMode === 'ttk' ? 's' : '';
+                  let result = `${ctx.dataset.label}: ${val}${unit}`;
+
+                  // Add statistics for TTK mode BEFORE the distance category
+                  if (currentGraphMode === 'ttk' && dataset.hp !== undefined) {
+                    const isCrit = dataset.isCrit;
+                    const hp = dataset.hp;
+                    
+                    // Calculate damage at current distance
+                    const damageAtDist = tooltipInputs.falloffEnabled
+                      ? getDamageAtDistance(tooltipInputs.damage, tooltipInputs.falloffMult, tooltipInputs.falloffStart, tooltipInputs.falloffEnd, dist, isCrit ? tooltipInputs.critMult : 1)
+                      : tooltipInputs.damage * (isCrit ? tooltipInputs.critMult : 1);
+                    
+                    // Calculate stats at current distance
+                    const shots = Math.ceil(hp / damageAtDist);
+                    const reloads = Math.floor((shots - 1) / tooltipInputs.magazine);
+                    const totalDamage = shots * damageAtDist;
+                    
+                    result += ` (Shots: ${shots}) (Damage: ${Math.round(totalDamage)}) (Reloads: ${reloads})`;
+                  }
+
+                  // Add the distance category at the end
+                  result += ` (${distanceCategory})`;
+                  
+                  return result;
+                }
+              }
+            },
+            legend: { display: true }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              min: 0,
+              max: xEnd,
+              title: {
+                display: true,
+                text: 'Distance (m)'
+              }
+            },
+            y: {
+              beginAtZero: false,
+              min: yMin,
+              max: yMax,
+              title: {
+                display: true,
+                text: graphMode === 'ttk' ? 'Time to Kill (s)' : 'Damage'
+              }
+            }
+          }
+        },
+        plugins: graphMode === 'ttk' ? [annotationPlugin] : []
       });
+    }
 
-      document.getElementById('falloff').addEventListener('change', function() {
-        setFalloffInputsEnabled(this.checked);
-        updateChart();
-      });
+    // Event listeners
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', updateChart);
+      el.addEventListener('change', updateChart);
+    });
 
-      window.onload = () => {
-        setFalloffInputsEnabled(document.getElementById('falloff').checked);
-        loadPreset('R357'); // Load default preset
-        updateChart();
-      };
+    document.getElementById('falloff').addEventListener('change', function() {
+      setFalloffInputsEnabled(this.checked);
+      updateChart();
+    });
+
+    window.onload = () => {
+      setFalloffInputsEnabled(document.getElementById('falloff').checked);
+      loadPreset('R357'); // Load default preset
+      updateChart();
+    };
     </script>
   </body>
 </html>
