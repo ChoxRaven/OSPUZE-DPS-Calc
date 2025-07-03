@@ -8,19 +8,19 @@ window.presets = {
     },
     Berreta93R: {
     displayName: '93R',
-    damage: 26, critMult: 1.5, magazine: 21, fireRate: 950, reloadTime: 1.75,
-    burstRate: 220, burstCount: 3, firemode: 'Standard',
+    damage: 26, critMult: 1.5, magazine: 24, fireRate: 950, reloadTime: 1.75,
+    burstRate: 220, burstCount: 3, firemode: 'Burst',
     falloff: true, falloffMult: 0.4, falloffStart: 32, falloffEnd: 40
     },
     M11: {
     displayName: 'M11',
-    damage: 16, critMult: 1.5, magazine: 40, fireRate: 1000, reloadTime: 2.2,
+    damage: 16, critMult: 1.5, magazine: 40, fireRate: 1000, reloadTime: 1.85,
     burstRate: 0, burstCount: 0, firemode: 'Standard',
     falloff: true, falloffMult: 0.52, falloffStart: 10, falloffEnd: 17.5
     },
     XP54: {
     displayName: 'XP-54',
-    damage: 17, critMult: 1.5, magazine: 34, fireRate: 850, reloadTime: 2.5,
+    damage: 16, critMult: 1.5, magazine: 34, fireRate: 860, reloadTime: 2.5,
     burstRate: 0, burstCount: 0, firemode: 'Standard',
     falloff: true, falloffMult: 0.52, falloffStart: 22.5, falloffEnd: 32.5
     },
@@ -52,7 +52,7 @@ window.presets = {
     // Medium weapons
     R357: {
     displayName: 'R.357', // The goat
-    damage: 74, critMult: 2, magazine: 6, fireRate: 140, reloadTime: 2,
+    damage: 74, critMult: 2, magazine: 6, fireRate: 140, reloadTime: 2.5,
     burstRate: 0, burstCount: 0, firemode: 'Standard',
     falloff: true, falloffMult: 0.4, falloffStart: 27.5, falloffEnd: 44
     },
@@ -70,7 +70,7 @@ window.presets = {
     },
     FAMAS: {
     displayName: 'FAMAS',
-    damage: 23, critMult: 1.5, magazine: 27, fireRate: 1050, reloadTime: 2.5,
+    damage: 23, critMult: 1.5, magazine: 27, fireRate: 1050, reloadTime: 2.6,
     burstRate: 220, burstCount: 3, firemode: 'Burst',
     falloff: true, falloffMult: 0.5, falloffStart: 35, falloffEnd: 42.5
     },
@@ -90,7 +90,7 @@ window.presets = {
     // Heavy weapons
     Akimbo50: {
     displayName: '.50 Akimbo',
-    damage: 44, critMult: 2, magazine: 14, fireRate: 230, reloadTime: 1.8,
+    damage: 44, critMult: 2, magazine: 14, fireRate: 230, reloadTime: 3,
     burstRate: 0, burstCount: 0, firemode: 'Standard',
     falloff: true, falloffMult: 0.5, falloffStart: 35, falloffEnd: 42
     },
