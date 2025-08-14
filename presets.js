@@ -9,7 +9,7 @@ window.presets = {
     Berreta93R: {
     displayName: '93R',
     damage: 26, critMult: 1.5, magazine: 24, fireRate: 950, reloadTime: 1.75,
-    burstRate: 220, burstCount: 3, firemode: 'Burst',
+    burstRate: 210, burstCount: 3, firemode: 'Burst',
     falloff: true, falloffMult: 0.4, falloffStart: 32, falloffEnd: 40
     },
     M11: {
