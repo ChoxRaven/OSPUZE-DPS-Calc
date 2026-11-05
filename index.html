@@ -54,6 +54,7 @@
     </style>
   </head>
   <body>
+  <h3 style="text-align: center;">Some weapons still use old values</h3>
     <div class="presets-container">
       <fieldset class="preset-group">
         <legend>Light</legend>
@@ -67,9 +68,11 @@
       <fieldset class="preset-group">
         <legend>Medium</legend>
         <button type="button" onclick="loadPreset('R357')">R.357</button>
+        <button type="button" onclick="loadPreset('P90')">P90</button>
         <button type="button" onclick="loadPreset('AKM')">AKM</button>
         <button type="button" onclick="loadPreset('FCAR')">FCAR</button>
         <button type="button" onclick="loadPreset('FAMAS')">FAMAS</button>
+        <button type="button" onclick="loadPreset('ChimeraXB')">Chimera-XB</button>
         <button type="button" onclick="loadPreset('Pike556')">Pike-556</button>
         <button type="button" onclick="loadPreset('CB01Repeater')">CB-01 Repeater</button>
       </fieldset>
@@ -91,9 +94,11 @@
             <option value="damage">Damage</option>
             <option value="ttk">TTK</option>
           </select><br>
-          <label><input type="checkbox" class="enemyToggle" value="150" checked> Light (150HP)</label><br>
+          <label><input type="checkbox" class="enemyToggle" value="150"> Legacy Light (150HP)</label><br>
+          <label><input type="checkbox" class="enemyToggle" value="175" checked> Light (175HP)</label><br>
           <label><input type="checkbox" class="enemyToggle" value="250" checked> Medium (250HP)</label><br>
-          <label><input type="checkbox" class="enemyToggle" value="350" checked> Heavy (350HP)</label>
+          <label><input type="checkbox" class="enemyToggle" value="350"> Legacy Heavy (350HP)</label><br>
+          <label><input type="checkbox" class="enemyToggle" value="325" checked> Heavy (325HP)</label>
         </fieldset>
 
         <fieldset>
@@ -324,7 +329,12 @@
             ctx.save();
             ctx.beginPath();
             ctx.arc(xPix, yPix, 3, 0, 2 * Math.PI);
-            ctx.fillStyle = hp === 150 ? '#50c878' : hp === 250 ? '#f4c542' : '#c75050';
+            ctx.fillStyle =
+              hp === 150 ? '#00d9ff' :
+              hp === 175 ? '#50c878' :
+              hp === 250 ? '#f4c542' :
+              hp === 325 ? '#c75050' :
+              '#a855f7';
             ctx.fill();
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 1;
@@ -437,8 +447,18 @@
             critPoints.push({ x: distance, y: critTTK });
           }
           
-          const color = hp === 150 ? '#50c878' : hp === 250 ? '#f4c542' : '#c75050';
-          const critColor = hp === 150 ? '#4ae99b' : hp === 250 ? '#f7e571' : '#f28b8b';
+          const color =
+            hp === 150 ? '#00d9ff' :
+            hp === 175 ? '#50c878' :
+            hp === 250 ? '#f4c542' :
+            hp === 325 ? '#c75050' :
+            '#a855f7';
+          const critColor =
+            hp === 150 ? '#00d9ff' :
+            hp === 175 ? '#50c878' :
+            hp === 250 ? '#f4c542' :
+            hp === 325 ? '#c75050' :
+            '#a855f7';
           
           const baseDataset = {
             label: `Base TTK - ${hp} HP`,

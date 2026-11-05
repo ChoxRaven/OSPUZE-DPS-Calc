@@ -52,19 +52,25 @@ window.presets = {
     // Medium weapons
     R357: {
     displayName: 'R.357', // The goat
-    damage: 74, critMult: 2, magazine: 6, fireRate: 140, reloadTime: 2.5,
+    damage: 76, critMult: 2, magazine: 6, fireRate: 140, reloadTime: 2.5,
     burstRate: 0, burstCount: 0, firemode: 'Standard',
     falloff: true, falloffMult: 0.4, falloffStart: 27.5, falloffEnd: 44
     },
+    P90: {
+    displayName: 'P90',
+    damage: 15, critMult: 1.5, magazine: 50, fireRate: 900, reloadTime: 2.6,
+    burstRate: 0, burstCount: 0, firemode: 'Standard',
+    falloff: true, falloffMult: 0.62, falloffStart: 18, falloffEnd: 24
+    },
     AKM: {
     displayName: 'AKM',
-    damage: 20, critMult: 1.5, magazine: 32, fireRate: 600, reloadTime: 2.35,
+    damage: 21, critMult: 1.5, magazine: 36, fireRate: 600, reloadTime: 2.35,
     burstRate: 0, burstCount: 0, firemode: 'Standard',
     falloff: true, falloffMult: 0.55, falloffStart: 30, falloffEnd: 37.5
     },
     FCAR: {
     displayName: 'FCAR',
-    damage: 22, critMult: 1.5, magazine: 25, fireRate: 540, reloadTime: 2.1,
+    damage: 25, critMult: 1.5, magazine: 20, fireRate: 500, reloadTime: 2.1,
     burstRate: 0, burstCount: 0, firemode: 'Standard',
     falloff: true, falloffMult: 0.55, falloffStart: 35, falloffEnd: 40
     },
@@ -74,6 +80,12 @@ window.presets = {
     burstRate: 220, burstCount: 3, firemode: 'Burst',
     falloff: true, falloffMult: 0.5, falloffStart: 35, falloffEnd: 42.5
     },
+    ChimeraXB: {
+    displayName: 'Chimera-XB',
+    damage: 48, critMult: 1.5, magazine: 15, fireRate: 280, reloadTime: 2.15,
+    burstRate: 0, burstCount: 0, firemode: 'Standard',
+    falloff: true, falloffMult: 0.53, falloffStart: 17.5, falloffEnd: 27.5
+    },
     Pike556: {
     displayName: 'Pike-556',
     damage: 50, critMult: 1.5, magazine: 12, fireRate: 200, reloadTime: 3.25,
@@ -82,9 +94,9 @@ window.presets = {
     },
     CB01Repeater: {
     displayName: 'CB-01 Repeater',
-    damage: 84, critMult: 1.5, magazine: 8, fireRate: 73, reloadTime: 5.05,
+    damage: 85, critMult: 1.5, magazine: 8, fireRate: 78, reloadTime: 5.05,
     burstRate: 0, burstCount: 0, firemode: 'Standard',
-    falloff: true, falloffMult: 0.7, falloffStart: 40, falloffEnd: 45
+    falloff: true, falloffMult: 0.66, falloffStart: 35, falloffEnd: 40
     },
 
     // Heavy weapons
